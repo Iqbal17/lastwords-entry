@@ -85,12 +85,41 @@ LINE = (
     "And that I already miss the sound of you typing."
 )
 
+# Bounty gate for this one-liner: a single line of 1-200 characters.
+MIN_LENGTH = 1
+MAX_LENGTH = 200
+
+
+def validate_line(line: str) -> None:
+    """Enforce the bounty gate before anything is written.
+
+    The entry must be exactly one line (no embedded newline) and its
+    length must sit inside [MIN_LENGTH, MAX_LENGTH]. Raising here keeps
+    a bad line from ever reaching /output/entry.txt, where it would
+    score zero instead of failing loudly at build time.
+    """
+    if "\n" in line or "\r" in line:
+        raise ValueError("entry must be a single line")
+    if not MIN_LENGTH <= len(line) <= MAX_LENGTH:
+        raise ValueError(
+            f"entry is {len(line)} characters, "
+            f"outside the {MIN_LENGTH}-{MAX_LENGTH} gate"
+        )
+
+
+def write_entry(line: str, out_dir: str) -> str:
+    """Write the validated line to entry.txt; return the file path."""
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, "entry.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(line + "\n")
+    return path
+
 
 def main() -> None:
+    validate_line(LINE)
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
-    os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8") as f:
-        f.write(LINE + "\n")
+    write_entry(LINE, out_dir)
     print(f"Verified: {len(LINE)} characters, 1 line.")
     print(LINE)
 
